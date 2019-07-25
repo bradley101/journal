@@ -8,7 +8,7 @@ home_dir = str(Path.home())
 data_dir = home_dir + '/.journalrc'
 f_data_dir = None
 data = {'users': {}, 'data': {}}
-logged_in_user = False
+logged_in_user = None
 
 class NS:
     pass
@@ -20,6 +20,10 @@ def save():
 
 def sign_up():
     global logged_in_user
+    if len(data['users'].keys()) == 10:
+        print('No more users can be added')
+        return
+
     ns = NS()
     ns.name = input('Enter Name: ')
 
@@ -30,7 +34,7 @@ def sign_up():
             ns.repeat_password = getpass.getpass('Repeat Password: ')
         input_pwd()
         while not ns.password == ns.repeat_password:
-            print ('Passwords do no match')
+            print('Passwords do no match')
             input_pwd()
 
     _sign_up()
@@ -39,9 +43,14 @@ def sign_up():
     data['data'][ns.user_name] = []
     save()
     logged_in_user = user
-    print (logged_in_user)
+
 
 def login():
+    global logged_in_user
+    if len(data['users'].keys()) == 0:
+        print ('No users available')
+        return
+
     ns = NS()
     def _login():
         ns.user_name = input('Enter Username: ')
@@ -50,9 +59,9 @@ def login():
     while ns.user_name not in data['users'] or data['users'][ns.user_name]['password'] != ns.password:
         print ('Invalid Username or Password. Try Again')
         _login()
-    
+
     logged_in_user = data['users'][ns.user_name]
-    
+
 
 
 def show_welcome_screen():
@@ -61,7 +70,7 @@ def show_welcome_screen():
     ns.inp = input()
     while ns.inp != '1' and ns.inp != '2' and ns.inp != '3':
         ns.inp = input()
-    
+
     if ns.inp == '2':
         sign_up()
     elif ns.inp == '1':
@@ -71,32 +80,45 @@ def show_welcome_screen():
 
 
 def list_entries():
-    entries = data['data'][logged_in_user.user_name]
+    global logged_in_user
+    entries = data['data'][logged_in_user['user_name']]
+
+    if len(entries) == 0:
+        print('No Journal entry available')
+        return
 
     for entry in entries:
         print ('{} - {}'.format(entry['timestamp'], entry['text']))
 
 def create_entry():
     global logged_in_user
-    print (logged_in_user)
-    print ('Enter text:')
+
+    print('Enter text:')
     text = input()
     now = datetime.datetime.now()
-    ampm = 'am' if now.hour < 12 else 'pm'
-    hr = now.hour - 12 if now.hour >= 13 else now.hour
-    print (logged_in_user)
+
     data['data'][logged_in_user['user_name']].append({
-        'timestamp': '{} {} {} {}.{}{}'.format(now.date, now.month, now.year, hr, now.minute, ampm),
+        'timestamp': now.strftime('%d %B %Y %I:%M%p'),
         'text': text
     })
+    if len(data['data'][logged_in_user['user_name']]) > 50:
+        data['data'][logged_in_user['user_name']] = data['data'][logged_in_user['user_name']][1:]
+
     save()
     print('\nSaved successfully')
+
+
+def logout():
+    global logged_in_user
+    logged_in_user = None
+
 
 def show_user_screen():
     ns = NS()
     def menu():
-        print ('\n\nEnter\n1 to List Journal Entries\n2 to create Journal Entry\n3 to Logout\n# to Quit')
+        print('\n\nEnter\n1 to List Journal Entries\n2 to create Journal Entry\n3 to Logout\n# to Quit')
         ns.inp = input()
+
     menu()
     while ns.inp != '1' and ns.inp != '2' and ns.inp != '3' and ns.inp != '#':
         menu()
@@ -123,25 +145,31 @@ def init():
         data = json.loads(f_data_dir.read().decode())
 
     show_welcome_screen()
-    
+
     if logged_in_user != None:
-        print (logged_in_user)
         resp = show_user_screen()
 
         while resp == '1' or resp == '2':
             resp = show_user_screen()
-        
+
         if resp == '3':
             logged_in_user = None
             return '3'
         elif resp == '#':
             save()
             quit()
+    else:
+        return '3'
 
 
 if __name__ == "__main__":
+    ns = NS()
     try:
-        init()
+        ns.resp = init()
+        while ns.resp == '3':
+            ns.resp = init()
+
     finally:
         save()
         f_data_dir.close()
+
