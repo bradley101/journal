@@ -62,6 +62,30 @@ def _testlogin(u, p):
     logged_in_user = data['users'][u]
     return True
 
+def _testlist_entries():
+    global logged_in_user
+    if logged_in_user:
+        for entry in data['data'][logged_in_user['user_name']]:
+            print('{} - {}'.format(entry['timestamp'], entry['text']))
+            return True
+    else:
+        return False
+
+
+def _testcreate_entry(t):
+    global logged_in_user, data
+    now = datetime.datetime.now()
+    if logged_in_user:
+        data['data'][logged_in_user['user_name']].append({
+            'timestamp': now.strftime('%d %B %Y %I:%M%p'),
+            'text': t
+        })
+        if len(data['data'][logged_in_user['user_name']]) >= 50:
+            data['data'][logged_in_user['user_name']] = data['data'][logged_in_user['user_name']][1:]
+        save()
+        return True
+    else:
+        return False
 
 
 def _testsu(n, u, p, r):
@@ -73,7 +97,9 @@ def _testsu(n, u, p, r):
         return False
 
     data['users'][u] = {'name': n, 'user_name': u, 'password': p}
+    data['data'][u] = []
     save()
+    return True
 
 def login():
     global logged_in_user
