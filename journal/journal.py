@@ -44,6 +44,36 @@ def sign_up():
     save()
     logged_in_user = user
 
+def _testinit():
+    global f_data_dir, data
+    if (not os.path.exists(data_dir)):
+        f_data_dir = open(data_dir, 'w+b')
+        save()
+    else:
+        f_data_dir = open(data_dir, 'r+b')
+        data = json.loads(f_data_dir.read().decode())
+
+def _testlogin(u, p):
+    global data, logged_in_user
+    if u not in data['users']:
+        return False
+    if p != data['users'][u]['password']:
+        return False
+    logged_in_user = data['users'][u]
+    return True
+
+
+
+def _testsu(n, u, p, r):
+    if u in data['users']:
+        return False
+    if p != r:
+        return False
+    if len(data['users']) == 10:
+        return False
+
+    data['users'][u] = {'name': n, 'user_name': u, 'password': p}
+    save()
 
 def login():
     global logged_in_user
